@@ -4,26 +4,39 @@ from discord.ext import commands
 import os
 import math
 import re
+import threading
+from flask import Flask
 
 # --- CONFIGURATION ---
-TOKEN = os.environ["TOKEN"]  # Token Discord (ajouté dans Koyeb Environment Variables)
+TOKEN = os.environ["TOKEN"]  # Token Discord (variable d'environnement sur Render)
 LOGO_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
 BANNER_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
 
-# --- INITIALISATION ---
+# --- SERVEUR FLASK KEEP-ALIVE ---
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot Les Bannis actif !"
+
+def run_flask():
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+threading.Thread(target=run_flask).start()
+
+# --- INITIALISATION DU BOT ---
 intents = discord.Intents.default()
+intents.message_content = True  # Utile pour slash commands
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- FONCTIONS UTILITAIRES ---
 def parse_time_string(time_str: str) -> tuple:
-    hours = 0
-    minutes = 0
-    match = re.match(r'(?:(\d+)h)?(?:(\d+)m)?$', time_str)
-    if match:
-        if match.group(1):
-            hours = int(match.group(1))
-        if match.group(2):
-            minutes = int(match.group(2))
+    time_str = time_str.lower().replace(" ", "")  # Nettoie la chaîne
+    match = re.match(r'(?:(\d{1,2})h)?(?:(\d{1,2})m)?$', time_str)
+    if not match:
+        return 0, 0
+    hours = int(match.group(1)) if match.group(1) else 0
+    minutes = int(match.group(2)) if match.group(2) else 0
     return hours, minutes
 
 def calculate_merits(hours: int, minutes: int) -> tuple:
