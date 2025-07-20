@@ -26,18 +26,26 @@ threading.Thread(target=run_flask).start()
 
 # --- INITIALISATION DU BOT ---
 intents = discord.Intents.default()
-intents.message_content = True  # Utile pour slash commands
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- FONCTIONS UTILITAIRES ---
 def parse_time_string(time_str: str) -> tuple:
-    time_str = time_str.lower().replace(" ", "")  # Nettoie la chaîne
+    time_str = time_str.lower().replace(" ", "")
+
+    # Vérifier si le format est 11:24
+    match_colon = re.match(r'(\d{1,2}):(\d{1,2})$', time_str)
+    if match_colon:
+        return int(match_colon.group(1)), int(match_colon.group(2))
+
+    # Vérifier le format 11h24, 11h, 24m
     match = re.match(r'(?:(\d{1,2})h)?(?:(\d{1,2})m)?$', time_str)
-    if not match:
-        return 0, 0
-    hours = int(match.group(1)) if match.group(1) else 0
-    minutes = int(match.group(2)) if match.group(2) else 0
-    return hours, minutes
+    if match:
+        hours = int(match.group(1)) if match.group(1) else 0
+        minutes = int(match.group(2)) if match.group(2) else 0
+        return hours, minutes
+
+    return 0, 0
 
 def calculate_merits(hours: int, minutes: int) -> tuple:
     total_minutes = hours * 60 + minutes
@@ -72,7 +80,7 @@ async def convert(interaction: discord.Interaction, value: str):
 
     hours, minutes = parse_time_string(value)
     if hours == 0 and minutes == 0:
-        await interaction.response.send_message("❌ Format invalide. Exemple : `12h45` ou `45900`")
+        await interaction.response.send_message("❌ Format invalide. Exemple : `12h45`, `11:24` ou `45900`")
         return
 
     merits_needed, merits_fee = calculate_merits(hours, minutes)
