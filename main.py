@@ -9,7 +9,7 @@ from flask import Flask
 
 # --- CONFIGURATION ---
 TOKEN = os.environ["TOKEN"]  # Token Discord (variable d'environnement sur Render)
-LOGO_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
+LOGO_URL = "https://i.ibb.co/yBVxXBYB/Banni-re.png"
 BANNER_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
 
 # --- SERVEUR FLASK KEEP-ALIVE ---
