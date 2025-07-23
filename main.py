@@ -5,17 +5,34 @@ import os
 import math
 import re
 
-# --- CONFIGURATION ---
-TOKEN = os.environ["TOKEN"]  # Token Discord (ajouté dans Koyeb Environment Variables)
+# === KEEP ALIVE (Flask hack pour Render Web Service) ===
+from flask import Flask
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot Discord en ligne !"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# === CONFIGURATION ===
+TOKEN = os.environ["TOKEN"]
 LOGO_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
 BANNER_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
 TIGERCLAW_MERITS = 1876
 
-# --- INITIALISATION ---
+# === INITIALISATION DISCORD ===
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- FONCTIONS UTILITAIRES ---
+# === FONCTIONS UTILITAIRES ===
 def parse_time_string(time_str: str) -> tuple:
     hours = 0
     minutes = 0
@@ -39,10 +56,10 @@ def calculate_time(merits: int) -> tuple:
     minutes = int(total_minutes % 60)
     return hours, minutes
 
-def calculate_tigerclaws(merits: int) -> float:
-    return merits / TIGERCLAW_MERITS
+def calculate_tigerclaws(merits: int) -> int:
+    return math.ceil(merits / TIGERCLAW_MERITS)
 
-# --- COMMANDE /convert ---
+# === COMMANDE /convert ===
 @bot.tree.command(name="convert", description="Convertit automatiquement entre temps (ex: 12h45) et merits (ex: 45900)")
 @app_commands.describe(value="Durée (ex: 12h45) ou nombre de merits (ex: 45900)")
 async def convert(interaction: discord.Interaction, value: str):
@@ -58,7 +75,7 @@ async def convert(interaction: discord.Interaction, value: str):
         embed.add_field(name="⏱️ Temps", value=f"**{hours}h {minutes}m**", inline=False)
         embed.add_field(
             name="🐅 Tigerclaws nécessaires",
-            value=f"**{tigerclaws:.2f}** ({int(tigerclaws)} Tigerclaws entières)",
+            value=f"**{tigerclaws} Tigerclaw(s)**",
             inline=False
         )
         embed.set_thumbnail(url=LOGO_URL)
@@ -84,12 +101,12 @@ async def convert(interaction: discord.Interaction, value: str):
     embed.add_field(name="💰 Avec 0.5% fee", value=f"**{merits_fee}**", inline=True)
     embed.add_field(
         name="🐅 Tigerclaws nécessaires",
-        value=f"**{tigerclaws_needed:.2f}** ({int(tigerclaws_needed)} Tigerclaws entières)",
+        value=f"**{tigerclaws_needed} Tigerclaw(s)**",
         inline=False
     )
     embed.add_field(
         name="🐅 Tigerclaws (avec 0.5% fee)",
-        value=f"**{tigerclaws_fee:.2f}** ({int(tigerclaws_fee)} Tigerclaws entières)",
+        value=f"**{tigerclaws_fee} Tigerclaw(s)**",
         inline=False
     )
     embed.set_thumbnail(url=LOGO_URL)
@@ -102,5 +119,7 @@ async def on_ready():
     await bot.tree.sync()
     print(f"✅ Bot connecté en tant que {bot.user}")
 
-# --- LANCEMENT ---
+# === LANCEMENT (Web Service mode) ===
+keep_alive()  # <= INDISPENSABLE pour Render Web Service !
 bot.run(TOKEN)
+
