@@ -24,8 +24,8 @@ def keep_alive():
 
 # === CONFIGURATION ===
 TOKEN = os.environ["TOKEN"]
-LOGO_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
-BANNER_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
+LOGO_URL = "https://i.ibb.co/zV62F61G/lesbannis.png"
+BANNER_URL = "https://i.ibb.co/Z1WW7q7b/Klescher-Rehabilitation-Facility-sign-Aberdeen.jpg"
 TIGERCLAW_MERITS = 1876
 
 # === INITIALISATION DISCORD ===
@@ -34,15 +34,19 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # === FONCTIONS UTILITAIRES ===
 def parse_time_string(time_str: str) -> tuple:
-    hours = 0
-    minutes = 0
-    match = re.match(r'(?:(\d+)h)?(?:(\d+)m)?$', time_str)
+    # Accepte "11h18", "11h", "18m", "11h18m", "90m", "11h 18"
+    match = re.match(r'^\s*(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?\s*$', time_str)
     if match:
-        if match.group(1):
-            hours = int(match.group(1))
-        if match.group(2):
-            minutes = int(match.group(2))
-    return hours, minutes
+        hours = int(match.group(1) or 0)
+        minutes = int(match.group(2) or 0)
+        return hours, minutes
+    # Accepte aussi "11h18" sans le "m" final (ex : 11h18, 2h5, 3h 07)
+    match2 = re.match(r'^\s*(\d+)\s*h\s*(\d{1,2})\s*$', time_str)
+    if match2:
+        hours = int(match2.group(1))
+        minutes = int(match2.group(2))
+        return hours, minutes
+    return 0, 0
 
 def calculate_merits(hours: int, minutes: int) -> tuple:
     total_minutes = hours * 60 + minutes
@@ -61,7 +65,7 @@ def calculate_tigerclaws(merits: int) -> int:
 
 # === COMMANDE /convert ===
 @bot.tree.command(name="convert", description="Convertit automatiquement entre temps (ex: 12h45) et merits (ex: 45900)")
-@app_commands.describe(value="Durée (ex: 12h45) ou nombre de merits (ex: 45900)")
+@app_commands.describe(value="Durée (ex: 12h45 ou 11h18) ou nombre de merits (ex: 45900)")
 async def convert(interaction: discord.Interaction, value: str):
     if value.isdigit():
         merits = int(value)
@@ -74,7 +78,7 @@ async def convert(interaction: discord.Interaction, value: str):
         )
         embed.add_field(name="⏱️ Temps", value=f"**{hours}h {minutes}m**", inline=False)
         embed.add_field(
-            name="🐅 Tigerclaws nécessaires",
+            name="🔑 Tigerclaws nécessaires",
             value=f"**{tigerclaws} Tigerclaw(s)**",
             inline=False
         )
@@ -86,7 +90,7 @@ async def convert(interaction: discord.Interaction, value: str):
 
     hours, minutes = parse_time_string(value)
     if hours == 0 and minutes == 0:
-        await interaction.response.send_message("❌ Format invalide. Exemple : `12h45` ou `45900`")
+        await interaction.response.send_message("❌ Format invalide. Exemple : `12h45`, `11h18` ou `45900`")
         return
 
     merits_needed, merits_fee = calculate_merits(hours, minutes)
@@ -100,12 +104,12 @@ async def convert(interaction: discord.Interaction, value: str):
     embed.add_field(name="🎖️ Merits nécessaires", value=f"**{merits_needed}**", inline=True)
     embed.add_field(name="💰 Avec 0.5% fee", value=f"**{merits_fee}**", inline=True)
     embed.add_field(
-        name="🐅 Tigerclaws nécessaires",
+        name="🔑 Tigerclaws nécessaires",
         value=f"**{tigerclaws_needed} Tigerclaw(s)**",
         inline=False
     )
     embed.add_field(
-        name="🐅 Tigerclaws (avec 0.5% fee)",
+        name="🔑 Tigerclaws (avec 0.5% fee)",
         value=f"**{tigerclaws_fee} Tigerclaw(s)**",
         inline=False
     )
@@ -122,4 +126,3 @@ async def on_ready():
 # === LANCEMENT (Web Service mode) ===
 keep_alive()  # <= INDISPENSABLE pour Render Web Service !
 bot.run(TOKEN)
-
