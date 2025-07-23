@@ -6,7 +6,7 @@ import math
 import re
 
 # --- CONFIGURATION ---
-TOKEN = os.environ["TOKEN"]  # Token Discord (ajouté dans Koyeb Environment Variables)
+TOKEN = os.environ["TOKEN"]
 LOGO_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
 BANNER_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
 TIGERCLAW_MERITS = 1876
@@ -40,13 +40,14 @@ def calculate_time(merits: int) -> tuple:
     return hours, minutes
 
 def calculate_tigerclaws(merits: int) -> float:
-    # Renvoie le nombre de Tigerclaws nécessaires pour couvrir les merits
     return merits / TIGERCLAW_MERITS
 
 # --- COMMANDE /convert ---
 @bot.tree.command(name="convert", description="Convertit automatiquement entre temps (ex: 12h45) et merits (ex: 45900)")
 @app_commands.describe(value="Durée (ex: 12h45) ou nombre de merits (ex: 45900)")
 async def convert(interaction: discord.Interaction, value: str):
+    await interaction.response.defer()  # <-- AJOUT FONDAMENTAL !
+
     if value.isdigit():
         merits = int(value)
         hours, minutes = calculate_time(merits)
@@ -65,12 +66,12 @@ async def convert(interaction: discord.Interaction, value: str):
         embed.set_thumbnail(url=LOGO_URL)
         embed.set_image(url=BANNER_URL)
         embed.set_footer(text="Les Bannis • Star Citizen", icon_url=LOGO_URL)
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
         return
 
     hours, minutes = parse_time_string(value)
     if hours == 0 and minutes == 0:
-        await interaction.response.send_message("❌ Format invalide. Exemple : `12h45` ou `45900`")
+        await interaction.followup.send("❌ Format invalide. Exemple : `12h45` ou `45900`")
         return
 
     merits_needed, merits_fee = calculate_merits(hours, minutes)
@@ -96,7 +97,7 @@ async def convert(interaction: discord.Interaction, value: str):
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=BANNER_URL)
     embed.set_footer(text="Les Bannis • Star Citizen", icon_url=LOGO_URL)
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
 @bot.event
 async def on_ready():
