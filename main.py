@@ -4,53 +4,28 @@ from discord.ext import commands
 import os
 import math
 import re
-import threading
-from flask import Flask
 
 # --- CONFIGURATION ---
-TOKEN = os.environ["TOKEN"]  # Token Discord (variable d'environnement sur Render)
-LOGO_URL = "https://i.ibb.co/yBVxXBYB/Banni-re.png"
+TOKEN = os.environ["TOKEN"]  # Token Discord (ajouté dans Koyeb Environment Variables)
+LOGO_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
 BANNER_URL = "https://i.ibb.co/xt2ycnL4/Chat-GPT-Image-12-juil-2025-07-30-20.png"
+TIGERCLAW_MERITS = 1876
 
-# --- SERVEUR FLASK KEEP-ALIVE ---
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot Les Bannis actif !"
-
-def run_flask():
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
-
-threading.Thread(target=run_flask).start()
-
-# --- INITIALISATION DU BOT ---
+# --- INITIALISATION ---
 intents = discord.Intents.default()
-intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- FONCTIONS UTILITAIRES ---
 def parse_time_string(time_str: str) -> tuple:
-    time_str = time_str.lower().replace(" ", "")
-
-    # Format 11:24
-    match_colon = re.match(r'^(\d{1,2}):(\d{1,2})$', time_str)
-    if match_colon:
-        return int(match_colon.group(1)), int(match_colon.group(2))
-
-    # Format 11h24
-    match_hm = re.match(r'^(\d{1,2})h(\d{1,2})$', time_str)
-    if match_hm:
-        return int(match_hm.group(1)), int(match_hm.group(2))
-
-    # Format 11h ou 24m
-    match_simple = re.match(r'^(?:(\d{1,2})h)?(?:(\d{1,2})m)?$', time_str)
-    if match_simple:
-        hours = int(match_simple.group(1)) if match_simple.group(1) else 0
-        minutes = int(match_simple.group(2)) if match_simple.group(2) else 0
-        return hours, minutes
-
-    return 0, 0
+    hours = 0
+    minutes = 0
+    match = re.match(r'(?:(\d+)h)?(?:(\d+)m)?$', time_str)
+    if match:
+        if match.group(1):
+            hours = int(match.group(1))
+        if match.group(2):
+            minutes = int(match.group(2))
+    return hours, minutes
 
 def calculate_merits(hours: int, minutes: int) -> tuple:
     total_minutes = hours * 60 + minutes
@@ -64,6 +39,10 @@ def calculate_time(merits: int) -> tuple:
     minutes = int(total_minutes % 60)
     return hours, minutes
 
+def calculate_tigerclaws(merits: int) -> float:
+    # Renvoie le nombre de Tigerclaws nécessaires pour couvrir les merits
+    return merits / TIGERCLAW_MERITS
+
 # --- COMMANDE /convert ---
 @bot.tree.command(name="convert", description="Convertit automatiquement entre temps (ex: 12h45) et merits (ex: 45900)")
 @app_commands.describe(value="Durée (ex: 12h45) ou nombre de merits (ex: 45900)")
@@ -71,12 +50,18 @@ async def convert(interaction: discord.Interaction, value: str):
     if value.isdigit():
         merits = int(value)
         hours, minutes = calculate_time(merits)
+        tigerclaws = calculate_tigerclaws(merits)
         embed = discord.Embed(
             title="⏳ Conversion Merits ➝ Temps",
             description=f"**{merits} merits** correspondent à :",
             color=0x8B0000
         )
         embed.add_field(name="⏱️ Temps", value=f"**{hours}h {minutes}m**", inline=False)
+        embed.add_field(
+            name="🐅 Nombre de Tigerclaws nécessaires",
+            value=f"**{tigerclaws:.2f}** ({int(tigerclaws)} Tigerclaws entières)",
+            inline=False
+        )
         embed.set_thumbnail(url=LOGO_URL)
         embed.set_image(url=BANNER_URL)
         embed.set_footer(text="Les Bannis • Star Citizen", icon_url=LOGO_URL)
@@ -89,6 +74,8 @@ async def convert(interaction: discord.Interaction, value: str):
         return
 
     merits_needed, merits_fee = calculate_merits(hours, minutes)
+    tigerclaws_needed = calculate_tigerclaws(merits_needed)
+    tigerclaws_fee = calculate_tigerclaws(merits_fee)
     embed = discord.Embed(
         title="⚒️ Conversion Temps ➝ Merits",
         description=f"**{hours}h {minutes}m** correspondent à :",
@@ -96,6 +83,16 @@ async def convert(interaction: discord.Interaction, value: str):
     )
     embed.add_field(name="🎖️ Merits nécessaires", value=f"**{merits_needed}**", inline=True)
     embed.add_field(name="💰 Avec 0.5% fee", value=f"**{merits_fee}**", inline=True)
+    embed.add_field(
+        name="🐅 Tigerclaws nécessaires",
+        value=f"**{tigerclaws_needed:.2f}** ({int(tigerclaws_needed)} Tigerclaws entières)",
+        inline=False
+    )
+    embed.add_field(
+        name="🐅 Tigerclaws (avec 0.5% fee)",
+        value=f"**{tigerclaws_fee:.2f}** ({int(tigerclaws_fee)} Tigerclaws entières)",
+        inline=False
+    )
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=BANNER_URL)
     embed.set_footer(text="Les Bannis • Star Citizen", icon_url=LOGO_URL)
