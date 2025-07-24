@@ -25,7 +25,7 @@ def keep_alive():
 # === CONFIGURATION ===
 TOKEN = os.environ["TOKEN"]
 LOGO_URL = "https://i.ibb.co/zV62F61G/lesbannis.png"
-BANNER_URL = "https://i.ibb.co/Z1WW7q7b/Klescher-Rehabilitation-Facility-sign-Aberdeen.jpg"
+BANNER_URL = "https://i.ibb.co/bRd0QbLB/imageBB.png"
 TIGERCLAW_MERITS = 1876
 
 # === INITIALISATION DISCORD ===
